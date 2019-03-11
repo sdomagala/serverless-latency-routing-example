@@ -1,0 +1,18 @@
+{
+    "name": "serverless-latency-routing",
+    "version": "0.0.1",
+    "repository": "git@github.com:sdomagala/serverless-latency-routing-example.git",
+    "author": {
+      "name": "Sebastian Domagała"
+    },
+    "engines": {
+      "node": ">=8.12.0"
+    },
+    "dependencies": {
+      "serverless": "^1.36.1"
+    },
+    "scripts": {
+      "deploy": "serverless deploy",
+      "remove": "serverless remove"
+    }
+  }

@@ -1,0 +1,66 @@
+---
+Resources:
+  CustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      RegionalCertificateArn: arn:aws:acm:${opt:region}:${env:ACCOUNT_ID}:certificate/${env:DOMAIN_CERT}
+      DomainName: ${env:ROUTE53_NAME}
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+  ApiGatewayDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    DependsOn:
+      - RegionCheckerLambdaFunction
+      - HealthLambdaFunction
+      - RegionCheckerLambdaPermissionApiGateway
+      - HealthLambdaPermissionApiGateway
+      - CustomDomain
+    Properties:
+      Description: "${opt:stage} environment"
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      StageName: "${opt:stage}"
+  BasePathMappingV1:
+    Type: 'AWS::ApiGateway::BasePathMapping'
+    DependsOn: ApiGatewayDeployment
+    Properties:
+      BasePath: v1
+      DomainName:
+        Ref: CustomDomain
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      Stage: ${opt:stage}
+  Route53HealthCheck:
+    Type: "AWS::Route53::HealthCheck"
+    Properties:
+      HealthCheckConfig:
+        Port: "443"
+        Type: "HTTPS_STR_MATCH"
+        SearchString: "OK"
+        ResourcePath: "/${opt:stage}/health"
+        FullyQualifiedDomainName:
+          Fn::Join:
+            - ""
+            - - Ref: ApiGatewayRestApi
+              - ".execute-api."
+              - ${opt:region}
+              - ".amazonaws.com"
+        RequestInterval: "30"
+        FailureThreshold: "2"
+      HealthCheckTags:
+        - Key: Name
+          Value: ${opt:stage}-${self:custom.serviceName}
+  Route53Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Region: ${opt:region}
+      HealthCheckId:
+        Ref: Route53HealthCheck
+      SetIdentifier: "latency-${opt:region}"
+      HostedZoneId: ${env:ROUTE53_HOSTED_ZONE_ID}
+      Name: ${env:ROUTE53_NAME}
+      Type: CNAME
+      TTL: 60
+      ResourceRecords:
+        - Fn::GetAtt: [ CustomDomain, RegionalDomainName ]

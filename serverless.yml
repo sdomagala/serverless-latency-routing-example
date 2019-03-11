@@ -1,0 +1,40 @@
+service: ${self:custom.serviceName}
+
+frameworkVersion: ">=1.36.1"
+
+custom:
+  packageJson: ${file(./package.json)}
+  serviceName: ${self:custom.packageJson.name}
+
+provider:
+  name: aws
+  stage: ${opt:stage}
+  runtime: nodejs8.10
+  endpointType: REGIONAL
+  environment:
+    NODE_ENV: ${opt:stage}
+    LAMBDA_REGION: ${opt:region}
+
+package:
+  exclude:
+    - .npmrc
+    - yarn.lock
+
+functions: 
+  regionChecker:
+    description: Get current lambda region
+    handler: handlers/regionChecker.handler
+    events:
+      - http:
+          path: region
+          method: GET
+  health:
+    description: Determine service health
+    handler: handlers/health.handler
+    events:
+      - http:
+          path: health
+          method: GET
+
+resources:
+  - ${file(cloudformation/routing.yml)}
