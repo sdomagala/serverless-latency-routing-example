@@ -20,4 +20,4 @@ sh ./remove.sh
 
 
 
-Tutorial available here: <medium link>
+Tutorial and in-depth explanation available here: https://medium.com/@sdoo/serverless-aws-latency-routing-d11d9160699e
